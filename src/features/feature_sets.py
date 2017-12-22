@@ -12,10 +12,10 @@ def get_cb_pipeline(train):
     Set of features used by Claim Buster.
     """
     features = [
-        ('sentiment', alchemy_feat.Sentiment()),
+        # ('sentiment', alchemy_feat.Sentiment()),
         ('sent_len', counting_feat.SentenceLength()),
         ('tfidf', counting_feat.BagOfTfIDF(train)),
-        ('ner', alchemy_feat.NER()),
+        # ('ner', alchemy_feat.NER()),
         ('pos', nltk_feat.POS())
     ]
     return get_pipeline(features)

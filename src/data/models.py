@@ -14,3 +14,4 @@ class Sentence(object):
         self.date = date
         self.tokens = word_tokenize(text)
         self.labels = labels
+        self.pred = '';

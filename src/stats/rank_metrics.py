@@ -5,8 +5,9 @@ from operator import itemgetter
 import numpy as np
 from math import log2
 from copy import deepcopy
-from data.debates import get_for_crossvalidation
+from src.data.debates import get_for_crossvalidation
 from src.models.sklearn_nn import run
+# from IPython.core.debugger import set_trace
 
 CONFIG = get_config()
 
@@ -35,12 +36,16 @@ def accuracy(y_true, y_pred):
     return num_correct/len(y_true)
 
 
-def average_precision(dataset, agreement):
+def average_precision(dataset, agreement=1, labelFunc='all'):
     sorted_dataset = sorted(dataset, key=attrgetter("pred"), reverse=True)
     relevant = sum([1 if i.label >= agreement else 0 for i in dataset])
     avg_p = 0
     for i, inst in enumerate(sorted_dataset):
-        if inst.label >= agreement:
+        label = inst.label
+        if (labelFunc != 'all'):
+            label = int(labelFunc(inst))
+        if label >= agreement:
+            # set_trace()
             avg_p += precision_at_n(dataset, n=i+1, agreement=agreement)
     return avg_p/relevant
 
