@@ -12,19 +12,18 @@ def get_cb_pipeline(train):
     Set of features used by Claim Buster.
     """
     features = [
-        # ('sentiment', alchemy_feat.Sentiment()),
+        ('sentiment', alchemy_feat.Sentiment()),
         ('sent_len', counting_feat.SentenceLength()),
         ('tfidf', counting_feat.BagOfTfIDF(train)),
-        # ('ner', alchemy_feat.NER()),
+        ('ner', alchemy_feat.NER()),
         ('pos', nltk_feat.POS())
     ]
     return get_pipeline(features)
 
 
-def get_experimential_pipeline(train):
+def get_experimential_pipeline():
     experimential_features = [
         ("pf_search", knn_similarity.PolitiFactSearch()),
-        ("train_search", knn_similarity.TrainSearch(train=train)),
         ('emb_chunk', embeddings_feat.W2VVectorSim()),
         ('emb_sent', embeddings_feat.W2VVectors()),
         ('tense', dict_feat.Tense()),
@@ -34,6 +33,23 @@ def get_experimential_pipeline(train):
         ('opponent', metadata_feat.TalkingAboutTheOther())
     ]
     return get_pipeline(experimential_features)
+
+def get_full_pipeline():
+    features = [
+        ('sentiment', alchemy_feat.Sentiment()),
+        ('sent_len', counting_feat.SentenceLength()),
+        ('ner', alchemy_feat.NER()),
+        ('pos', nltk_feat.POS()),
+        ("pf_search", knn_similarity.PolitiFactSearch()),
+        ('emb_chunk', embeddings_feat.W2VVectorSim()),
+        ('emb_sent', embeddings_feat.W2VVectors()),
+        ('tense', dict_feat.Tense()),
+        ('qatar_lex', dict_feat.SentimentLexicons()),
+        ('speaker', metadata_feat.Speaker()),
+        ('system', metadata_feat.System()),
+        ('opponent', metadata_feat.TalkingAboutTheOther())
+    ]
+    return get_pipeline(features)
 
 
 def get_pipeline(features):

@@ -7,7 +7,7 @@ from math import log2
 from copy import deepcopy
 from src.data.debates import get_for_crossvalidation
 from src.models.sklearn_nn import run
-# from IPython.core.debugger import set_trace
+from IPython.core.debugger import set_trace
 
 CONFIG = get_config()
 
@@ -50,7 +50,7 @@ def average_precision(dataset, agreement=1, labelFunc='all'):
     return avg_p/relevant
 
 
-def precision_at_n(dataset, n=10, agreement=1):
+def precision_at_n(dataset, n=10, agreement=1, labelFunc='all'):
     """
     Return precision of first n top ranked results.
     :param dataset: Sentences to get PR@N for
@@ -58,7 +58,14 @@ def precision_at_n(dataset, n=10, agreement=1):
     :return: PR@N
     """
     dataset = sorted(dataset, key=attrgetter('pred'), reverse=True)
-    relevant = sum([1 if instance.label >= agreement else 0 for instance in dataset[:n]])
+    
+    labels = list(map(lambda x: x.label, dataset))
+
+    if (labelFunc != 'all'):
+        labels = list(map(labelFunc, dataset))
+
+
+    relevant = sum([1 if label >= agreement else 0 for label in labels[:n]])
     return relevant/n
 
 

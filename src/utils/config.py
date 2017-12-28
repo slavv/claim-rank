@@ -4,6 +4,6 @@ from definitions import ROOT_DIR
 
 def get_config():
     config = ConfigParser()
-    config.read_dict({'claimrank': {'home_dir': ROOT_DIR}})
+    config.read_dict({'claimrank': {'project_path': ROOT_DIR}})
     config.read(CONFIG_PATH)
     return config['claimrank']
