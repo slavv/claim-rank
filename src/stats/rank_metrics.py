@@ -1,13 +1,17 @@
-from operator import attrgetter
+import copy
+import json
+import os
+
 from sklearn.metrics import precision_score, recall_score, average_precision_score, roc_auc_score
+from src.features import counting_feat, knn_similarity
+from src.features.feature_sets import get_experimential_pipeline
+from src.data.debates import get_for_crossvalidation, DEBATES, read_debates
 from src.utils.config import get_config
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 import numpy as np
 from math import log2
 from copy import deepcopy
-from src.data.debates import get_for_crossvalidation
 from src.models.sklearn_nn import run
-from IPython.core.debugger import set_trace
 
 CONFIG = get_config()
 
@@ -21,7 +25,7 @@ def precision(y_true, y_pred):
 
 
 def r_precision(dataset, agreement=1):
-    R = sum([1 if sent.label >= agreement else 0 for sent in dataset])
+    R = sum([1 if sent.label_test >= agreement else 0 for sent in dataset])
     return precision_at_n(dataset, n=R, agreement=agreement)
 
 
@@ -36,21 +40,17 @@ def accuracy(y_true, y_pred):
     return num_correct/len(y_true)
 
 
-def average_precision(dataset, agreement=1, labelFunc='all'):
+def average_precision(dataset, agreement):
     sorted_dataset = sorted(dataset, key=attrgetter("pred"), reverse=True)
-    relevant = sum([1 if i.label >= agreement else 0 for i in dataset])
+    relevant = sum([1 if i.label_test >= agreement else 0 for i in dataset])
     avg_p = 0
     for i, inst in enumerate(sorted_dataset):
-        label = inst.label
-        if (labelFunc != 'all'):
-            label = int(labelFunc(inst))
-        if label >= agreement:
-            # set_trace()
+        if inst.label_test >= agreement:
             avg_p += precision_at_n(dataset, n=i+1, agreement=agreement)
     return avg_p/relevant
 
 
-def precision_at_n(dataset, n=10, agreement=1, labelFunc='all'):
+def precision_at_n(dataset, n=10, agreement=1):
     """
     Return precision of first n top ranked results.
     :param dataset: Sentences to get PR@N for
@@ -58,21 +58,14 @@ def precision_at_n(dataset, n=10, agreement=1, labelFunc='all'):
     :return: PR@N
     """
     dataset = sorted(dataset, key=attrgetter('pred'), reverse=True)
-    
-    labels = list(map(lambda x: x.label, dataset))
-
-    if (labelFunc != 'all'):
-        labels = list(map(labelFunc, dataset))
-
-
-    relevant = sum([1 if label >= agreement else 0 for label in labels[:n]])
+    relevant = sum([1 if instance.label_test >= agreement else 0 for instance in dataset[:n]])
     return relevant/n
 
 
 def recall_at_n(dataset, n=10, agreement=1):
     dataset = sorted(dataset, key=attrgetter('pred'), reverse=True)
-    relevant = sum([1 if instance.label >= agreement else 0 for instance in dataset[:n]])
-    all_relevant = sum([1 if instance.label >= agreement else 0 for instance in dataset])
+    relevant = sum([1 if instance.label_test >= agreement else 0 for instance in dataset[:n]])
+    all_relevant = sum([1 if instance.label_test >= agreement else 0 for instance in dataset])
     return relevant / all_relevant
 
 
@@ -81,31 +74,29 @@ def dcg(dataset, agreement=True, agreement_num=1):
     result = 0
     for i, instance in enumerate(dataset):
         if agreement:
-            reli = 2**instance.label - 1
+            reli = 2**instance.label_test- 1
         else:
-            reli = 2**(1 if instance.label >= agreement_num else 0) - 1
+            reli = 2**(1 if instance.label_test>= agreement_num else 0) - 1
 
         denom = log2(i+2)
 
         result += reli / denom
     return result
 
-
 def ndcg(dataset, agreement=True, agreement_num=1):
     result = dcg(dataset, agreement)
 
     idataset = deepcopy(dataset)
     for data in idataset:
-        data.pred = data.label
+        data.pred = data.label_test
     idcg = dcg(idataset, agreement, agreement_num=agreement_num)
     return result/idcg
-
 
 def get_mrr(sentences, agreement=1):
     mrr = 0
     sorted_res = sorted(sentences, key=attrgetter("pred"), reverse=True)
     for i, res in enumerate(sorted_res):
-        if res.label >= agreement:
+        if res.label_test>= agreement:
             mrr += 1/(i+1)
     return mrr
 
@@ -125,10 +116,10 @@ def get_all_metrics(sentences, agreement=1):
                'PR@1': [], 'PR@3': [], 'PR@5': [],'PR@20': [], 'PR@10': [], 'PR@50': [], 'PR@100': [], 'PR@200': []}
 
     for sentence_set in sentences:
-        sentence_set = (sorted(sentence_set, key=attrgetter("pred"), reverse=True))
-        y_true = [1 if t.label >= agreement else 0 for t in sentence_set]
-        y_pred = [s.pred for s in sentence_set]
-        y_pred_label = [s.pred_label for s in sentence_set]
+        sentence_set = sorted(sentence_set, key=attrgetter("pred"), reverse=True)
+        y_true = copy.deepcopy([1 if t.label_test >= agreement else 0 for t in sentence_set])
+        y_pred = copy.deepcopy([s.pred for s in sentence_set])
+        y_pred_label = copy.deepcopy([s.pred_label for s in sentence_set])
 
         metrics['AvgP'].append(average_precision(sentence_set, agreement=agreement))
         metrics['ROC'].append(roc_auc_score(y_true, y_pred))
@@ -201,8 +192,31 @@ def get_metrics_for_plot(agreement, ranks):
 
 
 if __name__ == '__main__':
-        results = []
-        for test_deb, test, train in get_for_crossvalidation():
-            results.append(run(train=train, test=test))
+        serialize = False
+        if serialize:
+            all_debates = []
+            trainable_feats = counting_feat.BagOfTfIDF.FEATS + knn_similarity.TrainSearch.FEATS
+
+            for debate in DEBATES:
+                all_debates += read_debates(debate)
+            all_feats = get_experimential_pipeline(all_debates, to_matrix=False).fit_transform(all_debates)
+            for feat_name in all_feats[0].features.keys():
+                if feat_name in trainable_feats:
+                    continue
+                feat_dict = {}
+                for _x in all_feats:
+                    feat_dict[str(_x.id) + _x.debate.name] = _x.features[feat_name]
+                if os.path.isfile(CONFIG['features_dump_dir'] + feat_name):
+                    old_dict = json.loads(open(CONFIG['features_dump_dir'] + feat_name).read())
+                else:
+                    old_dict = {}
+                old_dict.update(feat_dict)
+                with open(CONFIG['features_dump_dir'] + feat_name, "w") as out:
+                    out.write(json.dumps(old_dict))
+        else:
+            results = []
+            for test_deb, test, train in get_for_crossvalidation():
+                split_results = run(test, train)
+                results.append(split_results)
+                get_all_metrics(copy.deepcopy([split_results]), agreement=1)
             get_all_metrics(results, agreement=1)
-        get_all_metrics(results, agreement=1)
