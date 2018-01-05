@@ -4,7 +4,7 @@ from src.features.features import Feature
 from src.utils.config import get_config
 import subprocess
 
-DISC_HOME = "/home/pepa/Downloads/Discourse_Parser_Dist/Discourse_Parser_Dist/"
+DISC_HOME = "/home/slav/ai/Discourse_Parser_Dist/"
 
 def filter_parse_sent(parsed_sent):
     foundings = []
@@ -179,11 +179,11 @@ def get_parse(text, id):
 import os
 def run_cmd(cmd):
     d = dict(os.environ)
-    d["WNSEARCHDIR"] = str("/home/pepa/nltk_data/corpora")
-    d["WNHOME"] = str("/home/pepa/nltk_data/corpora")
-    d["wnHomeUnix"] = str("/home/pepa/nltk_data/corpora/wordnet")
-    d["wnPrefixUnix"] = str("/home/pepa/nltk_data/corpora/wordn")
-    d["PERL5LIB"] = "/home/pepa/nltk_data/corpora"
+    d["WNSEARCHDIR"] = str("/home/slav/nltk_data/corpora")
+    d["WNHOME"] = str("/home/slav/nltk_data/corpora")
+    d["wnHomeUnix"] = str("/home/slav/nltk_data/corpora/wordnet")
+    d["wnPrefixUnix"] = str("/home/slav/nltk_data/corpora/wordn")
+    d["PERL5LIB"] = "/home/slav/nltk_data/corpora"
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, env=d, cwd=DISC_HOME)
     output, error = process.communicate()
     # print(output)
@@ -206,8 +206,8 @@ def generate_all():
         CHUNKS[k] = CHUNKS[k] + " " + sent.text
     CHUNKS.append("")
     # print(k)
-    output_doc = open("/home/pepa/PycharmProjects/claim-rank/data/discourse/chunk_parses_new_680.txt", "w")
-    output_sent = open("/home/pepa/PycharmProjects/claim-rank/data/discourse/sent_parses_new_680.txt", "w")
+    output_doc = open(CONFIG['chunk_parses'], "w")
+    output_sent = open(CONFIG['sentence_parses'], "w")
     j = 0
 
     start = 680

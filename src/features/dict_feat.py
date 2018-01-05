@@ -135,7 +135,7 @@ class SyntacticParse(Feature):
         self.syntactic_parses = {}
 
         for debate in DEBATES:
-            parsed = open("../../data/parses/" + CONFIG[debate.name] + "_parsed.txt")
+            parsed = open(CONFIG['parses'] + CONFIG[debate.name] + "_parsed.txt")
             sentences = read_debates(debate)
             for sentence in sentences:
                 parse = [float(x) for x in parsed.readline().strip().split()[1:]]

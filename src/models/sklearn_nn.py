@@ -1,7 +1,7 @@
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing.data import MinMaxScaler
 import numpy as np
-from features.feature_sets import get_cb_pipeline, get_serialized_pipeline, get_experimential_pipeline
+from src.features.feature_sets import get_cb_pipeline, get_serialized_pipeline, get_experimential_pipeline
 
 
 def run(test, train):

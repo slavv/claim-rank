@@ -19,8 +19,7 @@ def get_cb_pipeline(train):
     ]
     return get_pipeline(features)
 
-
-def get_experimential_pipeline(train, to_matrix=True):
+def get_experimental_pipeline(tfidfTrain, train, to_matrix=True):
     from src.features import alchemy_feat, counting_feat, \
         dict_feat, metadata_feat, nltk_feat, topics, \
         knn_similarity, discourse, textblob_feat, embeddings_feat
@@ -40,19 +39,18 @@ def get_experimential_pipeline(train, to_matrix=True):
         ('ner', alchemy_feat.NER()),  # cb
         ('pos', nltk_feat.POS()),  # cb
         ('syn', dict_feat.SyntacticParse()),
-        # ('tfidfn', counting_feat.BagOfTfIDFN(train)),
-        ('tfidf', counting_feat.BagOfTfIDF(train)),
+        #('tfidfn', counting_feat.BagOfTfIDFN(tfidfTrain)),
+        ('tfidf', counting_feat.BagOfTfIDF(tfidfTrain)),
         ('chunks', counting_feat.ChunkLen()),
         ('negatives', dict_feat.Negatives()),
         ('neg_chunk', dict_feat.NegationNextChunk()),
         ('lda', topics.LDATopics()),
         ('lda_sim', topics.LDAVectorSim()),
         ('textblob', textblob_feat.TextBlobSentiment()),
-        ('discourse', discourse.DiscourseInfo()),
+        # ('discourse', discourse.DiscourseInfo()),
         ('opponent', metadata_feat.TalkingAboutTheOther())
     ]
     return get_pipeline(feats, to_matrix)
-
 
 def get_serialized_pipeline(train):
     from src.features import counting_feat, knn_similarity
